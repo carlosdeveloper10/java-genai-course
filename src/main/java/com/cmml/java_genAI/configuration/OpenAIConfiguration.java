@@ -3,6 +3,7 @@ package com.cmml.java_genAI.configuration;
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,6 +17,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenAIConfiguration {
 
+    @Value("${client-azureopenai-key}")
+    private String azureKeyCredential;
+
+    @Value("${client-azureopenai-endpoint}")
+    private String azureOpenIAEndpoint;
+
     /**
      * Creates an {@link OpenAIAsyncClient} bean for interacting with Azure OpenAI Service asynchronously.
      *
@@ -24,8 +31,8 @@ public class OpenAIConfiguration {
     @Bean
     public OpenAIAsyncClient openAIAsyncClient() {
         return new OpenAIClientBuilder()
-                .credential(new AzureKeyCredential(""))
-                .endpoint("")
+                .credential(new AzureKeyCredential(azureKeyCredential))
+                .endpoint(azureOpenIAEndpoint)
                 .buildAsyncClient();
     }
 }
