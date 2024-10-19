@@ -1,18 +1,20 @@
 package com.cmml.java_genAI.message;
 
 
+import com.azure.core.annotation.QueryParam;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/message-analyzer")
+@RequestMapping("/moderate")
 public class MessageController {
 
     private final MessagesAnalyzer messagesAnalyzer;
@@ -23,7 +25,8 @@ public class MessageController {
     }
 
     @PostMapping("/contact-info")
-    public ResponseEntity<Map>   chat(@RequestBody Message message) throws JsonProcessingException {
-        return ResponseEntity.ok(messagesAnalyzer.analyzeIfConctatInfo(message.input()));
+    public ResponseEntity<String> chat(@RequestBody Message message,
+                                    @RequestParam(name = "tone", required = false, defaultValue = "moderated") String tone) {
+        return ResponseEntity.ok(messagesAnalyzer.analyzeIfConctatInfo(message, tone));
     }
 }

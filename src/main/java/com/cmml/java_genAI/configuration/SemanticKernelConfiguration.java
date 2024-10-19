@@ -9,6 +9,7 @@ import com.microsoft.semantickernel.orchestration.PromptExecutionSettings;
 import com.microsoft.semantickernel.plugin.KernelPlugin;
 import com.microsoft.semantickernel.plugin.KernelPluginFactory;
 import com.microsoft.semantickernel.services.chatcompletion.ChatCompletionService;
+import com.microsoft.semantickernel.services.chatcompletion.ChatHistory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,13 +74,44 @@ public class SemanticKernelConfiguration {
      *
      * @return an instance of {@link InvocationContext}
      */
-    @Bean
-    public InvocationContext invocationContext() {
+    //@Bean
+    public InvocationContext moderatedInvocationContext() {
         return InvocationContext.builder()
                 .withPromptExecutionSettings(PromptExecutionSettings.builder()
-                        .withTemperature(1.0)
+                        .withTemperature(1)
+                        .withTopP(0.5)
                         .build())
                 .build();
+    }
+
+    //@Bean
+    public InvocationContext creativeInvocationContext() {
+        return InvocationContext.builder()
+                .withPromptExecutionSettings(PromptExecutionSettings.builder()
+                        .withTemperature(2)
+                        .withTopP(0.9)
+                        .build())
+                .build();
+    }
+
+    //@Bean
+    public InvocationContext formalInvocationContext() {
+        return InvocationContext.builder()
+                .withPromptExecutionSettings(PromptExecutionSettings.builder()
+                        .withTemperature(0.1)
+                        .withTopP(0.1)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    public Map<String, InvocationContext> invocationContexts() {
+
+        return Map.of(
+                "formal", formalInvocationContext(),
+                "creative", creativeInvocationContext(),
+                "moderated", moderatedInvocationContext()
+        );
     }
 
     /**
@@ -95,6 +127,11 @@ public class SemanticKernelConfiguration {
                 .withMaxTokens(1008)
                 .withTemperature(1.0)
                 .build());
+    }
+
+    @Bean
+    public ChatHistory chatHistory(){
+        return new ChatHistory();
     }
 }
 

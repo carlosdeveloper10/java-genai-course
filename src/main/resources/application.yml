@@ -1,6 +1,6 @@
 spring.application.name: Java-GenAI-Course
 
-client-azureopenai-key: ##########
-client-azureopenai-endpoint: ##########
-client-azureopenai-deployment-name: ########
+client-azureopenai-key: ###########
+client-azureopenai-endpoint: ###########
+client-azureopenai-deployment-name: gpt-35-turbo
 
