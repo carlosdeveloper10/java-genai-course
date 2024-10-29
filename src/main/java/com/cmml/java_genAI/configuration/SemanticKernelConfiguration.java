@@ -14,7 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Configuration class for setting up Semantic Kernel components.
@@ -117,16 +119,18 @@ public class SemanticKernelConfiguration {
     /**
      * Creates a map of {@link PromptExecutionSettings} for different models.
      *
-     * @param deploymentOrModelName the Azure OpenAI deployment or model name
+     * @param models the Azure OpenAI deployment or model name
      * @return a map of model names to {@link PromptExecutionSettings}
      */
     @Bean
-    public Map<String, PromptExecutionSettings> promptExecutionsSettingsMap(@Value("${client-azureopenai-deployment-name}")
-                                                                            String deploymentOrModelName) {
-        return Map.of(deploymentOrModelName, PromptExecutionSettings.builder()
-                .withMaxTokens(1008)
-                .withTemperature(1.0)
-                .build());
+    public Map<String, PromptExecutionSettings> promptExecutionsSettingsMap(@Value("${client-azureopenai-deployment-names}")
+                                                                            List<String> models) {
+
+        return models.stream()
+                .collect(Collectors.toMap(model -> model, model -> PromptExecutionSettings.builder()
+                        .withMaxTokens(1008)
+                        .withTemperature(1.0)
+                        .build()));
     }
 
     @Bean

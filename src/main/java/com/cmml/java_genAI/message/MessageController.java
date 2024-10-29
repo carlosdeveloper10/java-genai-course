@@ -26,7 +26,8 @@ public class MessageController {
 
     @PostMapping("/contact-info")
     public ResponseEntity<String> chat(@RequestBody Message message,
-                                    @RequestParam(name = "tone", required = false, defaultValue = "moderated") String tone) {
-        return ResponseEntity.ok(messagesAnalyzer.analyzeIfConctatInfo(message, tone));
+                                       @RequestParam(name = "tone", required = false, defaultValue = "moderated") String tone,
+                                       @RequestParam(name = "model", required = false, defaultValue = "gpt-35-turbo") String model) {
+        return ResponseEntity.ok(messagesAnalyzer.analyzeIfConctatInfo(message, tone, model));
     }
 }

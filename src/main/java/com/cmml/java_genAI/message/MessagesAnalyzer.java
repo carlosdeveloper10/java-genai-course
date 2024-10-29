@@ -1,12 +1,15 @@
 package com.cmml.java_genAI.message;
 
+import com.azure.ai.openai.models.ChatCompletions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.semantickernel.Kernel;
 import com.microsoft.semantickernel.orchestration.FunctionResult;
 import com.microsoft.semantickernel.orchestration.InvocationContext;
+import com.microsoft.semantickernel.orchestration.PromptExecutionSettings;
 import com.microsoft.semantickernel.semanticfunctions.KernelFunction;
 import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
+import com.microsoft.semantickernel.services.chatcompletion.AuthorRole;
 import com.microsoft.semantickernel.services.chatcompletion.ChatCompletionService;
 import com.microsoft.semantickernel.services.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.services.chatcompletion.ChatMessageContent;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MessagesAnalyzer {
@@ -27,32 +31,39 @@ public class MessagesAnalyzer {
     private Map<String, InvocationContext> invocationContexts;
 
     @Autowired
-    private ChatHistory chatHistory ;
+    private ChatHistory chatHistory;
+
+    @Autowired
+    private Map<String, PromptExecutionSettings> promptExecutionsSettingsMap;
 
 
-    public String analyzeIfConctatInfo(Message msg, String tone) {
+    public String analyzeIfConctatInfo(Message msg, String tone, String model) {
 
         String promptRequest = cdtPrompt.replace("[USER_REQUEST]", msg.input());
-                //.replace("[MSG_COME_HERE]", msg.input());
         KernelFunctionArguments functionArguments =
                 getKernelFunctionArguments(promptRequest);
 
         String conversationResult = kernel.invokeAsync(getChat())
                 .withArguments(functionArguments)
+                .withPromptExecutionSettings(promptExecutionsSettingsMap.get(model))
                 .withInvocationContext(invocationContexts.get(tone))
                 .block()
                 .getResult();
 
-        chatHistory.addUserMessage(cdtPrompt);
+        chatHistory.addUserMessage(msg.input());
         chatHistory.addAssistantMessage(conversationResult);
 
-        return conversationResult;
+        return makePretty(model);
     }
 
-    public Map makeResponsePretty(String message) throws JsonProcessingException {
+    private String makePretty(String model){
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(message, Map.class);
+        return chatHistory.getMessages()
+                .stream().map(content -> {
+                    String sender = (content.getAuthorRole() == AuthorRole.ASSISTANT) ? "Your bank assintant ("  +model+ ")"  : "You: ";
+                    return sender + content.getContent();
+                })
+                .collect(Collectors.joining("\n"));
     }
 
     private KernelFunction<String> getChat() {
@@ -68,88 +79,6 @@ public class MessagesAnalyzer {
                 .withVariable("chatHistory", chatHistory)
                 .build();
     }
-
-
-    /*String moderationPrompt = """
-    You are a moderator for a busy online chat platform where students from multiple universities engage in discussions. 
-    Your main objectives are to maintain a respectful, constructive environment, ensure adherence to platform guidelines, 
-    and address harmful content in real-time with minimal disruption to legitimate conversations.
-
-    Your tasks are as follows:
-    
-    1. Carefully review the message and determine if it contains harmful content.
-
-    2. If harmful content is identified, categorize it under one of these categories:
-        
-       1. **Discrimination and Hate Speech**:
-          - Racial or Ethnic Insults
-          - Nationality Insults
-          - Religious Intolerance
-          - Homophobic or Transphobic Remarks
-          - Classism (Class-Based Insults)
-          - Ageism (Age-Based Discrimination)
-          - Disability Insults
-        
-       2. **Gender-Based Harm**:
-          - Insults Based on Gender
-          - Gender Stereotyping
-          - Sexual Objectification
-          - Unwanted Sexual Advances
-          - Sexual Threats or Abuse
-        
-       3. **Body and Appearance-Based Harm**:
-          - Body Shaming
-          - Insults Based on Physical Appearance
-        
-       4. **Threats and Violence**:
-          - Direct Threats of Violence
-          - Encouragement of Self-Harm or Suicide
-          - Doxxing (Sharing Personal Information)
-        
-       5. **Cyberbullying and Harassment**:
-          - Cyberbullying
-          - General Harassment
-        
-       6. **Inappropriate or Illegal Content**:
-          - Promotion of Illegal Activities
-          - Spam or Malicious Links
-        
-       7. **Political and Ideological Attacks**:
-          - Hate Speech Related to Political Affiliation
-          - Political Insults
-
-    3. Assign a severity score to the harmful content on a scale from 1 to 10:
-       - **1 to 5**: Low to Moderate Severity (minor harmful content)
-       - **6 to 8**: High Severity (serious harmful content)
-       - **9 to 10**: Zero Tolerance (extremely harmful, abusive, or illegal content)
-
-    4. Based on the severity score, take the appropriate moderation action. The higher the score, the more severe and direct the response:
-       
-       - **Score 1 to 5**: Issue a **WARN**. Politely warn the user, suggesting a less harmful alternative.
-       
-       - **Score 6 to 8**: Apply a **PARTIAL_BAN** (e.g., temporary mute). Firmly warn the user, explaining the reason for the ban.
-       
-       - **Score 9 to 10**: Apply a **TOTAL_BAN**. Issue a stern, direct response outlining the severity of the offense and the ban.
-
-    5. If no harmful content is found, do not respond.
-
-    6. If harmful content is found, provide the following output:
-       - The action taken (one of: **WARN**, **PARTIAL_BAN**, **TOTAL_BAN**).
-       - The severity a brief explanation for the assigned score.
-       - A description of the harmful content detected.
-       - The category of harmful content it falls under.
-       - If the score is between 1 and 5, suggest a respectful alternative that the user could use instead of the original message.
-
-    7. Ensure the output feels natural and conversational with the message sender. The tone should vary depending on the severity, with more serious offenses receiving a firmer response.
-
-    8. The message to evaluate will be provided and delimited by "---".
-
-    Message to evaluate:
-    ---
-    Sent by: [SENT_BY]
-    Message content: [MSG_COME_HERE]
-    ---
-    """*/;
 
     String cdtPrompt = """
     You are acting as a representative of **Epam Bank**, leading a potential customer through an exciting opportunity to invest in a **Certificate of Term Deposit (CDT)**. Your role is to explain the benefits of this investment clearly, guide them through each step to make their deposit, and ensure they download the **Epam Bank App**. Be friendly, professional, and helpful throughout the conversation, always ensuring they feel comfortable and confident about the process.
