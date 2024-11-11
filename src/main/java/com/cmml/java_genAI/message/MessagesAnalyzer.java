@@ -1,12 +1,9 @@
 package com.cmml.java_genAI.message;
 
-import com.azure.ai.openai.models.ChatCompletions;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.semantickernel.Kernel;
-import com.microsoft.semantickernel.orchestration.FunctionResult;
 import com.microsoft.semantickernel.orchestration.InvocationContext;
 import com.microsoft.semantickernel.orchestration.PromptExecutionSettings;
+import com.microsoft.semantickernel.orchestration.ToolCallBehavior;
 import com.microsoft.semantickernel.semanticfunctions.KernelFunction;
 import com.microsoft.semantickernel.semanticfunctions.KernelFunctionArguments;
 import com.microsoft.semantickernel.services.chatcompletion.AuthorRole;
@@ -25,6 +22,9 @@ public class MessagesAnalyzer {
 
 
     @Autowired
+    ChatCompletionService chatCompletionService;
+
+    @Autowired
     private Kernel kernel;
 
     @Autowired
@@ -39,31 +39,17 @@ public class MessagesAnalyzer {
 
     public String analyzeIfConctatInfo(Message msg, String tone, String model) {
 
-        String promptRequest = cdtPrompt.replace("[USER_REQUEST]", msg.input());
-        KernelFunctionArguments functionArguments =
-                getKernelFunctionArguments(promptRequest);
-
-        String conversationResult = kernel.invokeAsync(getChat())
-                .withArguments(functionArguments)
-                .withPromptExecutionSettings(promptExecutionsSettingsMap.get(model))
-                .withInvocationContext(invocationContexts.get(tone))
-                .block()
-                .getResult();
 
         chatHistory.addUserMessage(msg.input());
-        chatHistory.addAssistantMessage(conversationResult);
 
-        return makePretty(model);
-    }
+        List<ChatMessageContent<?>> results = chatCompletionService
+                .getChatMessageContentsAsync(chatHistory, kernel, invocationContexts.get(tone))
+                .block();
 
-    private String makePretty(String model){
 
-        return chatHistory.getMessages()
-                .stream().map(content -> {
-                    String sender = (content.getAuthorRole() == AuthorRole.ASSISTANT) ? "Your bank assintant ("  +model+ ")"  : "You: ";
-                    return sender + content.getContent();
-                })
-                .collect(Collectors.joining("\n"));
+        chatHistory.addAssistantMessage(results.get(0).getContent());
+
+        return results.get(0).getContent();
     }
 
     private KernelFunction<String> getChat() {
@@ -94,23 +80,10 @@ public class MessagesAnalyzer {
        Emphasize the flexibility of Epam Bank's CDT, allowing them to **choose how often they receive their interest payouts**:
        - They can select between **monthly** or **biweekly** payments, based on their financial preferences.
        - This ensures they enjoy consistent returns on their investment, whether for future savings or immediate financial goals.
-
-    3. **Step-by-Step Guidance to Invest in Epam Bank’s CDT**
-       Lead the customer through the steps, ensuring they understand how easy it is to start investing with Epam Bank:
-       
-       **Step 1: Download the Epam Bank App**
-       - Direct them to download the app from [**App Store**](https://bank.epam.com/appstore) or [**Google Play**](https://bank.epam.com/googleplay).
-       - Explain that with the app, they can **monitor their CDT investment in real-time**, track interest accrual, and **manage their accounts** effortlessly.
-
-       **Step 2: Register Your Account**
-       - Reassure them that registration is simple and secure:
-         - Provide basic personal details like name, email, and phone number.
-         - Complete a **quick identity verification** for security.
-         - Set preferences, and they're ready to start earning with Epam Bank’s **13% annual interest**!
-
-       **Step 3: Make Your Initial Deposit**
-       - Once registered, guide them to **make their deposit** directly through the app. They can start with an amount they feel comfortable with, knowing that every dollar is growing at **13% annually**.
-       - Highlight the transparency of Epam Bank, as the app will show **live updates** on their interest earnings.
+    
+    3. **The CDT can be open virtually**
+       Guide the person to create an account and open a CDT or more
+ 
 
     4. **Customer Support & Financial Security**
        Emphasize the **dedicated 24/7 support** available to them. Whether they have questions, need help with the app, or want assistance with their CDT account, **Epam Bank is always ready to assist**. Provide the support phone number: **(+1-123-456-789)**, reassuring them that no matter the time or issue, help is always just a call away. Mention how secure their investment is with Epam Bank, built on a foundation of trust and excellence.
@@ -132,17 +105,12 @@ public class MessagesAnalyzer {
        - "If you invest $10,000, you will earn **$1,300 annually** at the 13% rate."
        Always give them clear and exciting numbers to reinforce the benefit of starting today.
 
-    8. **Guide to Download, Register, and Invest**
-       Summarize the process with a clear call to action:
-       - **Step 1**: Download the Epam Bank App [App Store](https://bank.epam.com/appstore) or [Google Play](https://bank.epam.com/googleplay).
-       - **Step 2**: Complete the quick registration and verify your identity.
-       - **Step 3**: Make your deposit and start earning **13% annual interest** right away!
-
        Remind them that they are not just making an investment; they are securing their financial future with a **trusted and reliable partner** like Epam Bank.
 
     9. **Closing the Deal**
        Reassure them once again:
        - "Epam Bank’s CDT is a secure, high-yield way to grow your savings. With our **real-time app tracking**, **flexible payouts**, and **13% effective annual interest rate**, you’re making the smart choice. Plus, our **24/7 support** ensures that you’re never alone in this process."
+       - Help the user to open a new CDT
 
     10. Keep your answer short.   
     
@@ -150,8 +118,6 @@ public class MessagesAnalyzer {
     
     12. Avoid to lose the thread of the conversation.Your duty is sell CDT
 
-    **Start now with Epam Bank’s CDT. Secure your future with guaranteed returns—download the app, register, and grow your savings today!**
-    
     User request delimited by ---
     ---[USER_REQUEST]---
     """;

@@ -1,11 +1,14 @@
 package com.cmml.java_genAI.configuration;
 
 import com.azure.ai.openai.OpenAIAsyncClient;
+import com.cmml.java_genAI.plugins.CdtPlugin;
 import com.cmml.java_genAI.plugins.SimplePlugin;
 import com.microsoft.semantickernel.Kernel;
 import com.microsoft.semantickernel.aiservices.openai.chatcompletion.OpenAIChatCompletion;
 import com.microsoft.semantickernel.orchestration.InvocationContext;
+import com.microsoft.semantickernel.orchestration.InvocationReturnMode;
 import com.microsoft.semantickernel.orchestration.PromptExecutionSettings;
+import com.microsoft.semantickernel.orchestration.ToolCallBehavior;
 import com.microsoft.semantickernel.plugin.KernelPlugin;
 import com.microsoft.semantickernel.plugin.KernelPluginFactory;
 import com.microsoft.semantickernel.services.chatcompletion.ChatCompletionService;
@@ -53,7 +56,7 @@ public class SemanticKernelConfiguration {
     @Bean
     public KernelPlugin kernelPlugin() {
         return KernelPluginFactory.createFromObject(
-                new SimplePlugin(), "Simple Plugin");
+                new CdtPlugin(), "CdtPlugin");
     }
 
     /**
@@ -79,6 +82,8 @@ public class SemanticKernelConfiguration {
     //@Bean
     public InvocationContext moderatedInvocationContext() {
         return InvocationContext.builder()
+                .withReturnMode(InvocationReturnMode.LAST_MESSAGE_ONLY)
+                .withToolCallBehavior(ToolCallBehavior.allowAllKernelFunctions(true))
                 .withPromptExecutionSettings(PromptExecutionSettings.builder()
                         .withTemperature(1)
                         .withTopP(0.5)
@@ -89,6 +94,8 @@ public class SemanticKernelConfiguration {
     //@Bean
     public InvocationContext creativeInvocationContext() {
         return InvocationContext.builder()
+                .withReturnMode(InvocationReturnMode.LAST_MESSAGE_ONLY)
+                .withToolCallBehavior(ToolCallBehavior.allowAllKernelFunctions(true))
                 .withPromptExecutionSettings(PromptExecutionSettings.builder()
                         .withTemperature(2)
                         .withTopP(0.9)
@@ -99,6 +106,8 @@ public class SemanticKernelConfiguration {
     //@Bean
     public InvocationContext formalInvocationContext() {
         return InvocationContext.builder()
+                .withReturnMode(InvocationReturnMode.LAST_MESSAGE_ONLY)
+                .withToolCallBehavior(ToolCallBehavior.allowAllKernelFunctions(true))
                 .withPromptExecutionSettings(PromptExecutionSettings.builder()
                         .withTemperature(0.1)
                         .withTopP(0.1)
