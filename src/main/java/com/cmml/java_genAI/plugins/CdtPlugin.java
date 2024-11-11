@@ -21,10 +21,16 @@ public class CdtPlugin {
 
 
     @DefineKernelFunction(name = "retrieve_Cdt", description = "retrieves cdt by Id")
-    public Cdt retrieveCdtById(@KernelFunctionParameter(description = "Retrieve only the CDT with the given ID", name = "query") String cdtId){
-        return cdts.stream().filter(cdt -> cdt.ID().equals(cdtId))
+    public Cdt retrieveCdtById(@KernelFunctionParameter(description = "Retrieve only the CDT with the given ID", name = "id") String id){
+        return cdts.stream().filter(cdt -> cdt.ID().equals(id))
                 .findFirst()
                 .orElse(null);
+    }
+
+    @DefineKernelFunction(name = "close_Cdt", description = "closes cdt by Id")
+    public boolean closeCdtById(@KernelFunctionParameter(description = "Closes only the CDT with the given ID", name = "id") String id){
+        return cdts
+                .remove(new Cdt(id, 0, 0f, 0));
     }
 
     @DefineKernelFunction(name = "list_all_cdt", description = "retrieves all the CDTS")
