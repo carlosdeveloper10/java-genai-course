@@ -12,9 +12,10 @@ public class CdtPlugin {
     Set<Cdt> cdts = new HashSet();
 
     @DefineKernelFunction(name = "open_cdt", description = "Requires and amount and next open CDT. The amount is always provide by the user", returnDescription = "The id of the opened CDT")
-    public String openCdt(@KernelFunctionParameter(description = "amount for the new CDT. Must be provide by the user", name = "cdtData") Float amount){
+    public String openCdt(@KernelFunctionParameter(description = "amount for the new CDT. Must be provide by the user", name = "amount") Float amount,
+                          @KernelFunctionParameter(description = "days for the new CDT(period). Must be provide by the user", name = "days")Integer days){
         String id = UUID.randomUUID().toString().substring(0, 8);
-        cdts.add(new Cdt(id, amount, 0.13f, null));
+        cdts.add(new Cdt(id, amount, 0.13f, days));
         return id;
     }
 
