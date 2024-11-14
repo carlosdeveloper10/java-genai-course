@@ -1,0 +1,17 @@
+spring.application.name: Java-GenAI-Course
+
+client-azureopenai-key: ###########
+client-azureopenai-endpoint: ############
+client-azureopenai-deployment-name: gpt-35-turbo
+client-azureopenai-deployment-names:
+  amazon.titan-tg1-large,
+  gpt-35-turbo,
+  cohere.command-text-v14,
+  meta.llama3-8b-instruct-v1
+
+
+qdrant-host: localhost
+qdrant-port: 6334
+qdrant-collection-name: my-collection
+text-embeddings-model-name: text-embedding-ada-002
+
