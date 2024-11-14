@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.qdrant.client.PointIdFactory.id;
@@ -59,7 +60,7 @@ public class SimpleVectorActions {
 
         var pointStructs = new ArrayList<PointStruct>();
         points.forEach(point -> {
-            var pointStruct = getPointStruct(point);
+            var pointStruct = createPointStruct(point, text);
             pointStructs.add(pointStruct);
         });
 
@@ -138,11 +139,11 @@ public class SimpleVectorActions {
      * @param point the vector values
      * @return a {@link PointStruct} object containing the vector and associated metadata
      */
-    private PointStruct getPointStruct(List<Float> point) {
+    private PointStruct createPointStruct(List<Float> point, String text) {
         return PointStruct.newBuilder()
-                .setId(id(1))
+                .setId(id(UUID.randomUUID()))
                 .setVectors(vectors(point))
-                .putAllPayload(Map.of("info", value("Some info")))
+                .putAllPayload(Map.of("text", value(text)))
                 .build();
     }
 
