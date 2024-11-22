@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static io.qdrant.client.PointIdFactory.id;
 import static io.qdrant.client.ValueFactory.value;
@@ -49,7 +50,7 @@ public class SimpleVectorActions {
      * @throws ExecutionException if the vector saving operation fails
      * @throws InterruptedException if the thread is interrupted during execution
      */
-    public void processAndSaveText(String text) throws ExecutionException, InterruptedException {
+    public void processAndSaveText(UUID id, String text) throws ExecutionException, InterruptedException {
         var embeddings = getEmbeddings(text);
         var points = new ArrayList<List<Float>>();
         embeddings.forEach(
@@ -60,7 +61,7 @@ public class SimpleVectorActions {
 
         var pointStructs = new ArrayList<PointStruct>();
         points.forEach(point -> {
-            var pointStruct = createPointStruct(point, text);
+            var pointStruct = createPointStruct(point, text, id);
             pointStructs.add(pointStruct);
         });
 
@@ -92,6 +93,26 @@ public class SimpleVectorActions {
                                 .setLimit(1)
                                 .build())
                 .get();
+    }
+
+    public List<String> searchNearestEmbeddingsId(String text) throws ExecutionException, InterruptedException {
+        var embeddings = retrieveEmbeddings(text);
+        var qe = new ArrayList<Float>();
+        embeddings.block().getData().forEach(embeddingItem ->
+                qe.addAll(embeddingItem.getEmbedding())
+        );
+        return qdrantClient
+                .searchAsync(
+                        SearchPoints.newBuilder()
+                                .setCollectionName(COLLECTION_NAME)
+                                .addAllVector(qe)
+                                .setWithPayload(enable(true))
+                                .setLimit(1)
+                                .build())
+                .get()
+                .stream()
+                .map(scoredPoint -> scoredPoint.getId().getUuid())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -133,15 +154,20 @@ public class SimpleVectorActions {
         log.info(updateResult.getStatus().name());
     }
 
+    private void saveVector(ArrayList<PointStruct> pointStructs, String id) throws InterruptedException, ExecutionException {
+        var updateResult = qdrantClient.upsertAsync(COLLECTION_NAME, pointStructs).get();
+        log.info(updateResult.getStatus().name());
+    }
+
     /**
      * Constructs a point structure from a list of float values representing a vector.
      *
      * @param point the vector values
      * @return a {@link PointStruct} object containing the vector and associated metadata
      */
-    private PointStruct createPointStruct(List<Float> point, String text) {
+    private PointStruct createPointStruct(List<Float> point, String text, UUID id) {
         return PointStruct.newBuilder()
-                .setId(id(UUID.randomUUID()))
+                .setId(id(id))
                 .setVectors(vectors(point))
                 .putAllPayload(Map.of("text", value(text)))
                 .build();
